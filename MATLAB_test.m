@@ -1,0 +1,1 @@
+tic; x=readmatrix('TPS2.csv'); [b,a]=butter(4,50/(1000/2)); filtfilt(b,a,x(:,1)); toc

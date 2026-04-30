@@ -12,6 +12,10 @@ import time
 
 cols = ["timestamps","CAN1.OBD2.S01PID11_ThrottlePosition","CAN1.OBD2.S01PID05_EngineCoolantTemp"]
 
+ 
+#B_Order[cols] =float(self.Butterworth_order[cols].get())
+#                        B_Wn[cols] =float(self.Butterworth_Wn[cols].get())
+#                       self.Butterworthed[cols]=butterworth(datas[cols],B_Order[cols],B_Wn[cols])
  #pandas
  #pandas
  #These 2 lines make tps into 1-D array to fit in filtfilt
@@ -240,6 +244,49 @@ if __name__=="__main__":
 
 
 """
+class filtersettings(ttk.Frame):
+    def __init__(self,container,app,var,data):
+        super().__init__(container) 
+        self.app=app
+        self.var=var
+        self.data=data
+        self.debounce_filter={}
+        self.i=1
+        self.Threshold_var={}
+        tk.Label(self,text='Name:').grid(row = 0)
+        tk.Label(self,text='Debounce:').grid(row = 0, column=5)
+        tk.Label(self,text='Butterworth:').grid(row = 0,column=15)
+        tk.Label(self,text='Moving average:').grid(row = 0, column=25)
+        for cols in self.var:
+            if cols != ("timestamps"):
+                self.debounce_filter[cols]= tk.IntVar()
+                self.Threshold_var[cols]=tk.StringVar()
+                self.Threshold_var[cols].set("0.45")
+                self.label=tk.Label(self,text=cols+':').grid(row = self.i)
+                self.label=ttk.Checkbutton(self,text="",variable=self.debounce_filter[cols]).grid(row = self.i,column=5)
+                tk.Label(self,text='Threshold:').grid(row = self.i,column=6)
+                ttk.Entry(self,textvariable= self.Threshold_var[cols]).grid(row = self.i,column=10)
+                self.label=ttk.Checkbutton(self,text="").grid(row = self.i,column=15)
+                self.label=ttk.Checkbutton(self,text="").grid(row = self.i,column=25)            
+                self.i+=2
+        ttk.Button(self, text = 'Update plot page', width = 25, command = self.plotpage, state=tk.NORMAL).grid(row=self.i+2) #If breaks add back self.plot_pages= 
+
+    def plotpage(self):
+        Thresh={}
+        Deadbanded={}
+        for cols in self.var:
+            try:
+                Thresh[cols] =float(self.Threshold_var[cols].get()) 
+            except: print("Only enter numbers")
+            self.data = self.data.iloc[1:]
+            self.data = self.data.apply(pd.to_numeric, errors="coerce")
+            print(self.data[cols].to_numpy())
+            Deadbanded[cols]= deadband(self.data[cols],Thresh[cols])
+            return Deadbanded
+        
+            
+        
+        #self.app.NewTab(plot_page,"Plot",self.var,self.d_filter)
 menu = Menu(home)
 home.config(menu=menu)
 filemen = Menu(menu)

@@ -493,3 +493,46 @@ window.mainloop()
     
 #else return diff
 """
+""" for cols in self.header:
+            self.x=self.data[cols].values.to_numpy(dtype=float)
+            self.x = np.asarray(self.x).flatten()
+            self.x = np.ascontiguousarray(self.x)
+            
+            
+        self.chosendata.append(self.data[cols])
+        self.plot1.plot(self.chosendata,self.y)
+        self.plot1.plot(self.x,self.y)
+        self.canvas.draw() 
+        self.canvas.get_tk_widget().grid()
+        
+        toolbar_frame = ttk.Frame(self)
+        toolbar_frame.grid(sticky=SE)
+        canvas_frame = ttk.Frame(self)
+        canvas_frame.grid(sticky=NE)
+        option_frame = ttk.Frame(self).grid(sticky=W)
+        self.label = ttk.Label(option_frame,text='Filter options to add to graph:').grid(row=0,sticky=W,column=0)
+        self.i=1 
+        self.fig= Figure()
+        self.plot1= self.fig.add_subplot(111)
+        print(self.data)
+        #self.y = self.data['timestamps']
+        self.x =[]
+        self.units= self.data.iloc[0,:]               
+        self.Imported_data=data.dropna()
+        
+        
+        self.plot1.plot(0,self.y)
+        """
+        """
+        canvas = FigureCanvasTkAgg(self.fig,master=canvas_frame)
+        canvas.draw() #create and input matplot in canvas        
+        toolbar = NavigationToolbar2Tk(canvas,toolbar_frame)#toolbar                                   
+        toolbar.update()
+        toolbar.grid(sticky=SE)
+        canvas.get_tk_widget().grid()"""
+
+        """ def plot(self):
+        for cols in self.header:            
+            if self.var[cols].get()==1:
+                self.x[cols]=self.plot1.plot(self.data[cols],self.y)
+            else:self.x[cols]=0"""
