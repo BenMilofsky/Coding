@@ -15,7 +15,7 @@ N= 16
 
 cols = ["timestamps","CAN1.OBD2.S01PID11_ThrottlePosition","CAN1.OBD2.S01PID05_EngineCoolantTemp"]
 
-df= pd.read_csv('TPS1.csv',header=[0,1]) #only faster with over 500k values with 50k or less numpy is better
+df= pd.read_csv('TPS1_Dirty.csv',header=[0,1]) #only faster with over 500k values with 50k or less numpy is better
 #df= np.genfromtxt('TPS1.csv',delimiter=',',skip_header=1,filling_values=0,names=True)
 #t= df[]#np.take_along_axis(df,1,axis=1)
 t= df['timestamps'].values #pandas
@@ -76,6 +76,13 @@ plt.plot(t,Temp_ma,'r:', linewidth= 2)
 plt.title('Engine temps')
 #Temp_MA end
 
+b, TPS_butter= butter(2,0.45) #Output is quite similar to PM 2
+y_but = filtfilt(b,TPS_butter,temp)
+
+plt.figure(5)
+plt.plot(t,temp)#,'b--')
+plt.plot(t,y_but,linewidth=2)
+plt.title('2nd Order Butterworth')
 plt.show()
 
 
