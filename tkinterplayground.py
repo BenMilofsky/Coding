@@ -83,6 +83,15 @@ class plot_after(ttk.Frame):
         toolbar.update()
         toolbar.pack(side=tk.BOTTOM, fill=tk.X) #in window
         canvas.get_tk_widget().pack() #put in window
+        tk.Label(self,text="This tab has two filters a debounce filter that can be used to remove unwanted " \
+        "jittering when the value is jumping between two variables. This filter will chose one of the values" \
+        "within threshold. To use it set thresh look at the raw values on the graph find the magnitude of the" \
+        "jitter you are looking to remove and use a number 10 percent larger as thresh. " \
+        "Butterworth filter is for removing high frequency noise and essentially smothing the outputed graph" \
+        "increasing order will make the filters affect sharper. Critical frequency is the frequency at which" \
+        "filter will start to significantly reduce signal strength. Calculated by halfing sampling frequency" \
+        "divide the frequency you want to remove by half sampling frequency (Crit_f=Wanted frequency/(sampling frequency/2)). It will likely be between 0 and 1" \
+        "you can usualy estimate these values by looking at graph or looking at sensor figures.   ")
 
 class plot_before(ttk.Frame):
     def __init__(self,master,notebook):

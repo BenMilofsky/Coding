@@ -7,11 +7,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,NavigationToolbar2Tk)
-from Filter_draft import * #imports all functions can change to import specific
+from Coding.Code.Filters import * #imports all functions can change to import specific
 #from Filter_draft import second_order_butterworth
 
 #Input your file here
-File = 'TPS1_Dirty.csv' 
+File =  'TPS1_Dirty.csv' 
 
 
 class MainFrame(ttk.Frame): #ttk as only one tk per application
@@ -65,7 +65,7 @@ class FilterTab(ttk.Frame):
         self.imported =names
         self.data=data
         self.label = ttk.Label(self,text='Filter options to apply:').grid(row=0,sticky=W)
-        self.label = ttk.Label(self,text="Debounce").grid(row=0,column=1,padx=20)
+        self.label = ttk.Label(self,text="Deadband").grid(row=0,column=1,padx=20)
         self.label = ttk.Label(self,text="Butterworth").grid(row=0,column=3,padx=20)        
         #self.label = ttk.Label(self,text="Apply Moving Average").grid(row=0,column=25)
         #self.label = ttk.Label(self,text="Open advanced menu").grid(row=0,column=25)
@@ -82,8 +82,6 @@ class FilterTab(ttk.Frame):
         for cols in self.imported:
             if cols != ("timestamps"):
                 self.grid_columnconfigure(self.i, pad=30)
-                
-
                 self.grid_rowconfigure(self.i, pad=20)
                 
                 self.Threshold_var[cols]=tk.StringVar()
@@ -110,10 +108,47 @@ class FilterTab(ttk.Frame):
                 #ttk.Checkbutton(self,text="",variable=self.advanced_filter[cols]).grid(row=self.i,column=30)
                 self.i+=2
 
+        explanation_text = (
+            "Debounce filter:\n"
+            "Removes small rapid changes (jitter/noise). "
+            "Only changes larger than the threshold are accepted.\n"
+            "- Lower threshold = more sensitive\n"
+            "- Higher threshold = smoother signal\n\n"
+
+            "Butterworth filter:\n"
+            "Smooths the signal by reducing high-frequency noise.\n"
+            "- Higher order = sharper filtering\n"
+            "- Lower critical frequency = more smoothing \n"
+            "- Critical frequency must be between 0 and 1\n\n"
+
+            "Good starting values:"
+            "Threshold: Start at about 2-3% of peak value, "
+            "Order: 2–4, "
+            "Critical frequency: 0.1–0.3\n\n"
+            "Further detail can be found in filter code"
+        )
         
+        ttk.Button(self, text = 'Plot', width = 25, command =  self.Deadbandfilter, state=tk.NORMAL).grid(row=self.i+4) #If breaks add back self.plot_pages= """lambda:[,self.butterfilter]"""
+
+        explanation = tk.Label(
+            self,
+            text=explanation_text,
+            wraplength=1400,
+            justify="left",
+            anchor="w"
+        )
+
+        explanation.grid(
+            row=self.i+5,
+            column=0,
+            columnspan=10,
+            sticky="ew",
+            pady=15
+        )
+        
+        self.grid_columnconfigure(0, weight=0)
         #self.plot_pages= ttk.Button(self, text = 'Plot', width = 25, command = self.plotpage, state=tk.NORMAL).grid(row=self.i+2)
         #self.advanced_pages= ttk.Button(self, text = 'Advanced menu', width = 25, command = self.advanced_page, state=tk.NORMAL).grid(row=self.i+3)
-        ttk.Button(self, text = 'Plot', width = 25, command =  self.Deadbandfilter, state=tk.NORMAL).grid(row=self.i+4) #If breaks add back self.plot_pages= """lambda:[,self.butterfilter]"""
 
     
     def advanced_page(self):
@@ -179,9 +214,13 @@ class plot_page(ttk.Frame):
         self.choosebutterworth={}
         self.master = app
         self.chosen=[]
+        self.chosendata=[]
+
+        # Create the Matplotlib figure embedded inside the Tkinter GUI
         fig= Figure(figsize=(7,5),dpi=100)
         self.plot1= fig.add_subplot(111)
-        self.chosendata=[]
+
+        # Create frames used to separate controls, graph display and toolbar
         optionframe = Frame(self)
         optionframe.grid(row=0,column=0)
         graphframe=ttk.Frame(self)
@@ -189,10 +228,14 @@ class plot_page(ttk.Frame):
         toolbarframe =ttk.Frame(self)
         toolbarframe.grid(row=1,column=5)
         
-        self.canvas = FigureCanvasTkAgg(fig,master=graphframe)#master = self.master)
+        # Embed Matplotlib canvas inside Tkinter window
+        self.canvas = FigureCanvasTkAgg(fig,master=graphframe)
         self.canvas.get_tk_widget().grid()
         
+        # Add standard Matplotlib navigation toolbar
         NavigationToolbar2Tk(self.canvas, toolbarframe)
+
+        #Store and removing units from data
         self.units = self.data.iloc[0]   # store unit row
         self.data = self.data.iloc[1:]   # remove units
 
@@ -202,16 +245,18 @@ class plot_page(ttk.Frame):
         
         self.i=0
         
+        # Create dynamic checkboxes for each sensor channel
         for cols in self.header:
+
+            # Store checkbox states
             self.var[cols]= tk.IntVar()
             self.choosedeadband[cols]=tk.IntVar()
             self.choosebutterworth[cols]= tk.IntVar()
-            ttk.Checkbutton(optionframe,text=cols,command=self.plot, variable=self.var[cols]).grid()
-            
-            
-            if cols in self.deadband:
-               
-                ttk.Checkbutton(optionframe,text="Deadbanded  "+cols,command=self.plot, variable=self.choosedeadband[cols]).grid()
+
+            # Create checkbox linked to plotting function
+            ttk.Checkbutton(optionframe,text=cols,command=self.plot, variable=self.var[cols]).grid()        
+            if cols in self.deadband:               
+                ttk.Checkbutton(optionframe,text="Deadband  "+cols,command=self.plot, variable=self.choosedeadband[cols]).grid()
             if cols in self.butterworth:
                 ttk.Checkbutton(optionframe,text="Butterwoth  "+cols,command=self.plot, variable=self.choosebutterworth[cols]).grid()
         
@@ -233,27 +278,38 @@ class plot_page(ttk.Frame):
         self.plot1.clear()
         y = self.data['timestamps'].to_numpy()
         plotted = False #tracks if anything has been plotted
-        for cols in self.chosen_D:
-            deadband= self.deadband[cols]
-            
-            if len(y)== len(deadband):
-                self.plot1.plot(y,deadband, label="Deadbanded"+cols)
-                plotted = True 
+
+        # Plot selected filtered sensor datasets
+        
         for cols in self.chosen:         
-                 
+            unit = self.units[cols]
+            label = f"{cols} ({unit})" if unit else cols     
             x = self.data[cols].to_numpy()
             if len(x) == len(y):
-                self.plot1.plot(y, x, label=cols)
+                self.plot1.plot(y, x, label=cols+label)
                 plotted = True
-               
+
+        for cols in self.chosen_D:
+            deadband= self.deadband[cols]
+            unit = self.units[cols]
+            label = f"{cols} ({unit})" if unit else cols
+            if len(y)== len(deadband):
+                
+                self.plot1.plot(y,deadband, label="Deadband"+cols +label)
+                plotted = True 
+
         for cols in self.chosen_B:
             butterworth= self.butterworth.get(cols)
+            unit = self.units[cols]
+            label = f"{cols} ({unit})" if unit else cols
             if len(y) == len(butterworth):
-                self.plot1.plot(y,butterworth, label="Butterworth"+cols)
+                self.plot1.plot(y,butterworth, label="Butterworth"+cols+label)
                 plotted = True
 
         if plotted:
             self.plot1.legend()
+        
+        # Add graph formatting
         self.plot1.set_xlabel("Time")
         self.plot1.set_ylabel("Value (Logarithmic)")
         self.plot1.set_yscale("log") #remove this line to make y axis linear

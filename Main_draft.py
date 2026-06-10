@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,NavigationToolbar2Tk)
-from Filter_draft import * #imports all functions can change to import specific
+from Coding.Code.Filters import * #imports all functions can change to import specific
 #from Filter_draft import second_order_butterworth
 
 File = 'TPS1_Dirty.csv' #add file name here
@@ -25,10 +25,10 @@ class MainFrame(ttk.Frame): #ttk as only one tk per application
         self.var={}
         self.var["timestamps"] = tk.IntVar(value=1)
         for cols in self.headers:
-            if cols != ("timestamps"):
-                self.var[cols]=tk.IntVar()           
-                ttk.Checkbutton(self,text=cols,command=self.checked,variable=self.var[cols]).grid(row=self.i,sticky=W)
-                self.i+=1
+            
+            self.var[cols]=tk.IntVar()           
+            ttk.Checkbutton(self,text=cols,command=self.checked,variable=self.var[cols]).grid(row=self.i,sticky=W)
+            self.i+=1
         self.import_button.grid(row=self.i+1,sticky=W)
     def checked(self):
         self.chosen=[]
@@ -76,7 +76,7 @@ class FilterTab(ttk.Frame):
         self.Ma_filter={}
         self.advanced_filter={}
         for cols in self.imported:
-            if cols != ("timestamps"):
+            
                 self.Threshold_var[cols]=tk.StringVar()
                 self.Butterworth_order[cols]=tk.StringVar()
                 self.Butterworth_Wn[cols]=tk.StringVar()
@@ -88,7 +88,7 @@ class FilterTab(ttk.Frame):
                 self.b_filter[cols]= tk.IntVar()
                 self.Ma_filter[cols]= tk.IntVar()
                 self.advanced_filter[cols]= tk.IntVar()          
-                tk.Label(self,text=cols).grid(row=self.i,sticky=W)
+                ttk.Checkbutton(self,text=cols).grid(row=self.i,sticky=W)
                 ttk.Checkbutton(self,text="",variable=self.d_filter[cols]).grid(row=self.i,column=5)
                 tk.Label(self,text='Threshold:').grid(row = self.i,column=6)
                 ttk.Entry(self,textvariable= self.Threshold_var[cols]).grid(row = self.i,column=10)
@@ -101,7 +101,7 @@ class FilterTab(ttk.Frame):
                 #ttk.Checkbutton(self,text="",variable=self.advanced_filter[cols]).grid(row=self.i,column=30)
                 self.i+=2
         
-        self.plot_pages= ttk.Button(self, text = 'Plot', width = 25, command = self.plotpage, state=tk.NORMAL).grid(row=self.i+2)
+        self.plot_pages= ttk.Button(self, text = 'Update Plot', width = 25, command = self.advanced_filter, state=tk.NORMAL).grid(row=self.i+2)
         #self.advanced_pages= ttk.Button(self, text = 'Advanced menu', width = 25, command = self.advanced_page, state=tk.NORMAL).grid(row=self.i+3)
         ttk.Button(self, text = 'Plot', width = 25, command =  self.Deadbandfilter, state=tk.NORMAL).grid(row=self.i+4) #If breaks add back self.plot_pages= """lambda:[,self.butterfilter]"""
 
@@ -169,9 +169,14 @@ class plot_page(ttk.Frame):
         self.choosebutterworth={}
         self.master = app
         self.chosen=[]
+
+        # Create the Matplotlib figure embedded inside the Tkinter GUI
         fig= Figure(figsize=(7,5),dpi=100)
         self.plot1= fig.add_subplot(111)
+
         self.chosendata=[]
+
+        # Create frames used to separate controls, graph display and toolbar
         optionframe = Frame(self)
         optionframe.grid(row=0,column=0)
         graphframe=ttk.Frame(self)
@@ -179,23 +184,27 @@ class plot_page(ttk.Frame):
         toolbarframe =ttk.Frame(self)
         toolbarframe.grid(row=1,column=5)
         
+        # Embed Matplotlib canvas inside Tkinter window
         self.canvas = FigureCanvasTkAgg(fig,master=graphframe)#master = self.master)
         self.canvas.get_tk_widget().grid()
         
+        # Add standard Matplotlib navigation toolbar
         NavigationToolbar2Tk(self.canvas, toolbarframe)
+        
         self.units = self.data.iloc[0]   # store unit row
         self.data = self.data.iloc[1:]   # remove units
-
         self.data = self.data.apply(pd.to_numeric, errors="coerce")
         self.y = self.data['timestamps'].to_numpy()
-        
-        
-        self.i=0
-        
+
+        # Create dynamic checkboxes for each sensor channel
         for cols in self.header:
+
+            # Store checkbox states
             self.var[cols]= tk.IntVar()
             self.choosedeadband[cols]=tk.IntVar()
             self.choosebutterworth[cols]= tk.IntVar()
+
+            # Create checkbox linked to plotting function
             ttk.Checkbutton(optionframe,text=cols,command=self.plot, variable=self.var[cols]).grid()
             
             
@@ -223,12 +232,15 @@ class plot_page(ttk.Frame):
         self.plot1.clear()
         y = self.data['timestamps'].to_numpy()
         plotted = False #tracks if anything has been plotted
+
+        # Plot selected filtered sensor datasets
         for cols in self.chosen_D:
             deadband= self.deadband[cols]
             
             if len(y)== len(deadband):
                 self.plot1.plot(y,deadband, label="Deadbanded"+cols)
                 plotted = True 
+
         for cols in self.chosen:         
                  
             x = self.data[cols].to_numpy()
@@ -244,11 +256,46 @@ class plot_page(ttk.Frame):
 
         if plotted:
             self.plot1.legend()
+
+        # Add graph formatting
         self.plot1.set_xlabel("Time")
         self.plot1.set_ylabel("Value")
         self.plot1.figure.tight_layout()
         self.canvas.draw()
-        
+        explanation = tk.Label(self,text=
+                "Debounce filter:\n"
+                "The debounce (deadband) filter reduces small rapid changes (jitter/noise) in the signal. "
+                "A new value is only accepted if the change is greater than the threshold.\n\n"
+
+                "Threshold ('thresh'):\n"
+                "- Smaller threshold = more sensitive to small changes, less smoothing.\n"
+                "- Larger threshold = ignores more small fluctuations, more smoothing.\n"
+                "- Start slightly above the normal noise level in the signal.\n"
+                "- Example: if noise varies by about ±0.2, try a threshold around 0.25–0.3.\n\n"
+
+                "Butterworth filter:\n"
+                "The Butterworth filter smooths the signal by reducing high-frequency noise while keeping the overall shape of the data smooth.\n\n"
+
+                "Filter order:\n"
+                "- Higher order = stronger filtering and steeper cutoff.\n"
+                "- Lower order = lighter smoothing with faster response.\n"
+                "- Order 4 is a good general starting point.\n\n"
+
+                "Critical frequency:\n"
+                "The critical frequency controls when the filter starts reducing higher-frequency signal content.\n"
+                "In Python's butter() function, the value must be normalised between 0 and 1:\n"
+                "Crit_f = fc / (fs / 2)\n"
+                "where:\n"
+                "- fc = desired cutoff frequency\n"
+                "- fs = sampling frequency\n\n"
+
+                "Smaller critical frequency values give stronger smoothing.\n"
+                "Larger values keep more signal detail.\n"
+                "A good starting point is around 0.1–0.3, then adjust depending on the amount of noise reduction needed.",
+                
+                wraplength=400,
+                justify="left"
+        ).grid(row=self.i, column=0,columnspan=10, sticky="W",pady=10)
     
 
 class App(tk.Tk): #Class is same as doing home = Tk()
